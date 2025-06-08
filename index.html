@@ -291,6 +291,7 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
     <script>
         const fileInput = document.getElementById('fileInput');
         const dropZone = document.getElementById('dropZone');
@@ -396,7 +397,11 @@
 
             try {
                 const { jsPDF } = window.jspdf;
-                const doc = new jsPDF();
+                // Initialize jsPDF with appropriate unit and format (e.g., 'mm' for millimeters, 'a4')
+                const doc = new jsPDF({
+                    unit: 'mm',
+                    format: 'a4'
+                });
                 let firstImageAdded = false;
 
                 for (let i = 0; i < filesToConvert.length; i++) {
@@ -432,8 +437,6 @@
                                 if (file.type.startsWith('image/png')) {
                                     format = 'PNG';
                                 } else if (file.type.startsWith('image/webp')) {
-                                    // jsPDF supports WEBP, but it might convert it internally to JPEG or PNG for compatibility.
-                                    // For best results, ensure your WEBP images are non-animated.
                                     format = 'WEBP'; 
                                 }
 
@@ -441,14 +444,14 @@
                                 resolve();
                             };
                             img.onerror = (err) => {
-                                console.error("Error loading image:", err);
-                                reject(new Error("Failed to load image: " + file.name));
+                                console.error("Error loading image:", file.name, err);
+                                reject(new Error(`Failed to load image: ${file.name}. It might be corrupt or an unsupported format.`));
                             };
-                            reader.readAsDataURL(file);
+                            img.src = e.target.result;
                         };
                         reader.onerror = (err) => {
-                            console.error("Error reading file:", err);
-                            reject(new Error("Failed to read file: " + file.name));
+                            console.error("Error reading file:", file.name, err);
+                            reject(new Error(`Failed to read file: ${file.name}.`));
                         };
                         reader.readAsDataURL(file);
                     });
@@ -459,8 +462,8 @@
                 filesToConvert = []; // Clear files after successful conversion
                 displaySelectedFiles();
             } catch (error) {
-                console.error('Error converting to PDF:', error);
-                showMessage('Error converting images to PDF. Please try again. ' + error.message, 'error');
+                console.error('Conversion process error:', error);
+                showMessage(`Error converting images to PDF: ${error.message}`, 'error');
             } finally {
                 loader.style.display = 'none';
                 updateConvertButtonState();
