@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Image to PDF Converter (macOS UI)</title>
+    <title>Vacancy Hai Image to PDF Converter</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📄</text></svg>">
     <style>
         /* General Body Styles */
@@ -267,14 +267,14 @@
                 <path d="M12 17V11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 <path d="M9 14L12 11L15 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
-            Image to PDF Converter
+            Vacancy Hai Image to PDF Converter
         </h1>
 
         <div class="drop-zone" id="dropZone">
-            <input type="file" id="fileInput" accept="image/jpeg, image/jpg, image/png" multiple>
+            <input type="file" id="fileInput" accept="image/jpeg, image/jpg, image/png, image/webp" multiple>
             <span class="icon">🖼️</span>
             <p>Drag & Drop Images Here or Click to Select</p>
-            <p style="font-size: 0.9em; color: #777;">(JPG, JPEG, PNG files supported)</p>
+            <p style="font-size: 0.9em; color: #777;">(JPG, JPEG, PNG, WEBP files supported)</p>
         </div>
 
         <ul id="selectedFiles">
@@ -286,13 +286,11 @@
         <p id="message"></p>
 
         <div class="footer">
-            Developed by <a href="https://github.com/yourusername" target="_blank">Your Name/Username</a> | Inspired by macOS
+            Developed by <a href="https://vacancyhai.online" target="_blank">VACANCYHAI.ONLINE</a> | Inspired by USERS
         </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-
     <script>
         const fileInput = document.getElementById('fileInput');
         const dropZone = document.getElementById('dropZone');
@@ -333,10 +331,11 @@
         fileInput.addEventListener('change', (event) => {
             const newFiles = Array.from(event.target.files);
             newFiles.forEach(file => {
-                if (file.type.startsWith('image/')) {
+                // Check for image types including webp
+                if (file.type.startsWith('image/jpeg') || file.type.startsWith('image/png') || file.type.startsWith('image/webp')) {
                     filesToConvert.push(file);
                 } else {
-                    showMessage('Only image files (JPG, JPEG, PNG) are supported.', 'error');
+                    showMessage('Only image files (JPG, JPEG, PNG, WEBP) are supported.', 'error');
                 }
             });
             displaySelectedFiles();
@@ -358,10 +357,11 @@
             dropZone.classList.remove('dragover');
             const newFiles = Array.from(e.dataTransfer.files);
             newFiles.forEach(file => {
-                if (file.type.startsWith('image/')) {
+                // Check for image types including webp
+                if (file.type.startsWith('image/jpeg') || file.type.startsWith('image/png') || file.type.startsWith('image/webp')) {
                     filesToConvert.push(file);
                 } else {
-                    showMessage('Only image files (JPG, JPEG, PNG) are supported.', 'error');
+                    showMessage('Only image files (JPG, JPEG, PNG, WEBP) are supported.', 'error');
                 }
             });
             displaySelectedFiles();
@@ -418,31 +418,49 @@
                                 const pageWidth = doc.internal.pageSize.getWidth();
                                 const pageHeight = doc.internal.pageSize.getHeight();
 
+                                // Calculate the dimensions to fit the image within the page while maintaining aspect ratio
                                 const ratio = Math.min(pageWidth / imgWidth, pageHeight / imgHeight);
                                 const newWidth = imgWidth * ratio;
                                 const newHeight = imgHeight * ratio;
 
+                                // Center the image on the page
                                 const x = (pageWidth - newWidth) / 2;
                                 const y = (pageHeight - newHeight) / 2;
 
-                                doc.addImage(img.src, 'JPEG', x, y, newWidth, newHeight);
+                                // Determine image format for jsPDF
+                                let format = 'JPEG'; // Default
+                                if (file.type.startsWith('image/png')) {
+                                    format = 'PNG';
+                                } else if (file.type.startsWith('image/webp')) {
+                                    // jsPDF supports WEBP, but it might convert it internally to JPEG or PNG for compatibility.
+                                    // For best results, ensure your WEBP images are non-animated.
+                                    format = 'WEBP'; 
+                                }
+
+                                doc.addImage(img.src, format, x, y, newWidth, newHeight);
                                 resolve();
                             };
-                            img.onerror = reject;
-                            img.src = e.target.result;
+                            img.onerror = (err) => {
+                                console.error("Error loading image:", err);
+                                reject(new Error("Failed to load image: " + file.name));
+                            };
+                            reader.readAsDataURL(file);
                         };
-                        reader.onerror = reject;
+                        reader.onerror = (err) => {
+                            console.error("Error reading file:", err);
+                            reject(new Error("Failed to read file: " + file.name));
+                        };
                         reader.readAsDataURL(file);
                     });
                 }
 
-                doc.save('converted-images.pdf');
+                doc.save('vacancyhai-converted.pdf'); // Renamed output file
                 showMessage('PDF converted and downloaded successfully!', 'success');
                 filesToConvert = []; // Clear files after successful conversion
                 displaySelectedFiles();
             } catch (error) {
                 console.error('Error converting to PDF:', error);
-                showMessage('Error converting images to PDF. Please try again.', 'error');
+                showMessage('Error converting images to PDF. Please try again. ' + error.message, 'error');
             } finally {
                 loader.style.display = 'none';
                 updateConvertButtonState();
